@@ -1,5 +1,7 @@
 from os import path
 from time import sleep
+import json
+import logging
 
 from slackclient import SlackClient
 
@@ -12,16 +14,16 @@ class SlackBot:
 
         Attributes:
             client:SlackClinet: client instance with the given api token to perfom api calls
-            userIdDict:dict: contains {"real_name": "id"} of the users in a Slack Workspace
+            userIdDict:dict: contains {"id": "real_name"} of the users in a Slack Workspace
         """
         if not path.exists(token_file):
-            print(token_file + " not found!")
+            logging.critical(token_file + " not found!")
             exit(1)
 
         with open(token_file, 'rb') as f:
             api_token = (f.read().decode("latin-1")).strip()
 
-        print("token: " + api_token)
+        logging.info("token: " + api_token)
         self.client = SlackClient(api_token)
         self.userIdDict = {}
 
@@ -29,7 +31,7 @@ class SlackBot:
         """
         This method posts a message to a public channel, private channel, or direct message/IM channel.
         """
-        print('send \"{}\" to \"{}\"'.format(msg, channel))
+        logging.debug('send \"{}\" to \"{}\"'.format(msg, channel))
         return self.client.api_call(
             "chat.postMessage",
             channel=channel,
@@ -39,39 +41,46 @@ class SlackBot:
 
     def initUserIdDict(self):
         """
-        inits the self.userIdDict containing {"real_name: id"} for the workspace
+        inits the self.userIdDict containing {"id: real_name"} for the workspace
         """
         rsp = self.client.api_call("users.list")
         if rsp["ok"]:
             for m in rsp["members"]:
-                self.userIdDict[m["real_name"]] = m["id"]
+                self.userIdDict[m["id"]] = m["real_name"]
 
     def enter_rtm_loop(self):
         """
         Starts the real time messaging loop
         """
         if self.client.rtm_connect(with_team_state=False):
-            print("Connected to rtm api...")
+            logging.info("Connected to rtm api...")
             online = True
             while online:
                 event = self.client.rtm_read()
                 self._parse_rtm_event(event)
                 sleep(1)
         else:
-            print("Connection Failed")
+            logging.error("Connection Failed")
 
     def _parse_rtm_event(self, event):
         """
         Args:
             event:json: JSON respons from the rtm websocket
         """
+        try:
+            if len(event) > 0:
+                rsp = event[0]
+                if rsp["type"] == "message":
+                    # got a message
+                    msg = rsp["text"]
+                    userId = rsp["user"]
+                    print("msg: \"{}\" from \"{}\"".format(msg, self.userIdDict[userId]))
+                else:
+                    logging.warning(json.dumps(event, indent=2))
+        except KeyError as ke:
+            logging.error("KeyError: " + str(ke))
+            logging.error(json.dumps(event, indent=2))
 
-        if len(event) > 0:
-            rsp = event[0]
-            if rsp["type"] == "message":
-                # got a message
-                msg = rsp["text"]
-                print(msg)
 
 
 def main():
