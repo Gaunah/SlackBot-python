@@ -89,10 +89,10 @@ class SlackBot:
                     else:  # regular message
                         msg = rsp["text"]
                         userId = rsp["user"]
-                        print("msg: \"{}\" from \"{}\"".format(
+                        logger.info("msg: \"{}\" from \"{}\"".format(
                             msg, self.userIdDict[userId]))
                 elif rsp["type"] == "hello":  # server hello
-                    logger.info("got hello from server")
+                    logger.debug("got hello from server")
                 elif rsp["type"] == "user_typing":  # user typing
                     logger.info("{} is typing".format(
                         self.userIdDict[rsp["user"]]))
@@ -134,6 +134,10 @@ if __name__ == "__main__":
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         level=numeric_level,
         filename=args.log_file)
+
+    if args.log_file:  # to also print everything that is logged if log_file is provided
+        logging.getLogger().addHandler(logging.StreamHandler())
+
     logger = logging.getLogger("SlackBot")
 
     try:
