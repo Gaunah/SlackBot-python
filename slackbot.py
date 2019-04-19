@@ -105,20 +105,38 @@ class SlackBot:
             logger.error(json.dumps(event, indent=2))
 
 
-def main():
+def main(token_file):
     logger.info("SlackBot started")
-    sb = SlackBot("slack_api_token")
+    sb = SlackBot(token_file)
     sb.initUserIdDict()
     sb.enter_rtm_loop()
 
 
 if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(__file__)
+    parser.add_argument("--token",
+                        help="file containing the Slack API Token",
+                        required=True)
+    parser.add_argument("--log_level",
+                        help="logging level",
+                        choices=["DEBUG", "INFO",
+                                 "WARNING", "ERROR", "CRITICAL"],
+                        default="WARNING")
+    parser.add_argument("--log_file",
+                        help="file were the log gets written to e.g. \"slackbot.log\"",
+                        default=None)
+    args = parser.parse_args()
+
+    numeric_level = getattr(logging, args.log_level.upper(), None)
+
+    logging.basicConfig(
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        level=numeric_level,
+        filename=args.log_file)
+    logger = logging.getLogger("SlackBot")
+
     try:
-        logging.basicConfig(
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-            level=logging.INFO,
-            filename="slackbot.log")
-        logger = logging.getLogger("SlackBot")
-        main()
+        main(args.token)
     except KeyboardInterrupt:
         logger.info("stopped by user.")
