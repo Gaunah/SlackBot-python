@@ -71,35 +71,37 @@ class SlackBot:
         Args:
             event:json: JSON respons from the rtm websocket
         """
+        if len(event) == 0:
+            return  # got nothing, pass on
+
+        rsp = event[0]
         try:
-            if len(event) > 0:
-                rsp = event[0]
-                if rsp["type"] == "message":  # got a message
-                    if "subtype" in rsp:  # has a subtype
-                        if rsp["subtype"] == "message_deleted":  # message deleted
-                            msg = rsp["previous_message"]["text"]
-                            logger.info("\"{}\" got deleted!".format(msg))
-                        elif rsp["subtype"] == "message_changed":  # message changed
-                            old = rsp["previous_message"]["text"]
-                            new = rsp["message"]["text"]
-                            logger.info(
-                                "\"{}\" got changed to \"{}\"".format(old, new))
-                        else:
-                            logger.warning(json.dumps(event, indent=2))
-                    else:  # regular message
-                        msg = rsp["text"]
-                        userId = rsp["user"]
-                        logger.info("msg: \"{}\" from \"{}\"".format(
-                            msg, self.userIdDict[userId]))
-                elif rsp["type"] == "hello":  # server hello
-                    logger.debug("got hello from server")
-                elif rsp["type"] == "user_typing":  # user typing
-                    logger.info("{} is typing".format(
-                        self.userIdDict[rsp["user"]]))
-                elif rsp["type"] == "desktop_notification":  # notification
-                    logger.info("desktop_notification")
-                else:
-                    logger.warning(json.dumps(event, indent=2))
+            if rsp["type"] == "message":  # got a message
+                if "subtype" in rsp:  # has a subtype
+                    if rsp["subtype"] == "message_deleted":  # message deleted
+                        msg = rsp["previous_message"]["text"]
+                        logger.info("\"{}\" got deleted!".format(msg))
+                    elif rsp["subtype"] == "message_changed":  # message changed
+                        old = rsp["previous_message"]["text"]
+                        new = rsp["message"]["text"]
+                        logger.info(
+                            "\"{}\" got changed to \"{}\"".format(old, new))
+                    else:
+                        logger.warning(json.dumps(event, indent=2))
+                else:  # regular message
+                    msg = rsp["text"]
+                    userId = rsp["user"]
+                    logger.info("msg: \"{}\" from \"{}\"".format(
+                        msg, self.userIdDict[userId]))
+            elif rsp["type"] == "hello":  # server hello
+                logger.debug("got hello from server")
+            elif rsp["type"] == "user_typing":  # user typing
+                logger.info("{} is typing".format(
+                    self.userIdDict[rsp["user"]]))
+            elif rsp["type"] == "desktop_notification":  # notification
+                logger.info("desktop_notification")
+            else:
+                logger.warning(json.dumps(event, indent=2))
         except KeyError as ke:
             logger.error("KeyError: " + str(ke))
             logger.error(json.dumps(event, indent=2))
