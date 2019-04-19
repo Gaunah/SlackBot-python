@@ -6,7 +6,6 @@ from time import sleep
 from slackclient import SlackClient
 
 
-
 class SlackBot:
     def __init__(self, token_file):
         """
@@ -76,10 +75,22 @@ class SlackBot:
             if len(event) > 0:
                 rsp = event[0]
                 if rsp["type"] == "message":  # got a message
-                    msg = rsp["text"]
-                    userId = rsp["user"]
-                    print("msg: \"{}\" from \"{}\"".format(
-                        msg, self.userIdDict[userId]))
+                    if "subtype" in rsp:  # has a subtype
+                        if rsp["subtype"] == "message_deleted":  # message deleted
+                            msg = rsp["previous_message"]["text"]
+                            logger.info("\"{}\" got deleted!".format(msg))
+                        elif rsp["subtype"] == "message_changed":  # message changed
+                            old = rsp["previous_message"]["text"]
+                            new = rsp["message"]["text"]
+                            logger.info(
+                                "\"{}\" got changed to \"{}\"".format(old, new))
+                        else:
+                            logger.warning(json.dumps(event, indent=2))
+                    else:  # regular message
+                        msg = rsp["text"]
+                        userId = rsp["user"]
+                        print("msg: \"{}\" from \"{}\"".format(
+                            msg, self.userIdDict[userId]))
                 elif rsp["type"] == "hello":  # server hello
                     logger.info("got hello from server")
                 elif rsp["type"] == "user_typing":  # user typing
