@@ -93,6 +93,9 @@ class SlackBot:
                     userId = rsp["user"]
                     logger.info("msg: \"{}\" from \"{}\"".format(
                         msg, self.userIdDict[userId]))
+                    if msg.startswith("."):
+                        self._parse_command(msg, userId)
+
             elif rsp["type"] == "hello":  # server hello
                 logger.debug("got hello from server")
             elif rsp["type"] == "user_typing":  # user typing
@@ -105,6 +108,37 @@ class SlackBot:
         except KeyError as ke:
             logger.error("KeyError: " + str(ke))
             logger.error(json.dumps(event, indent=2))
+
+    def _parse_command(self, cmd, userId):
+        """
+        Args:
+            cmd:str: command string to be parsed (the whole msg)
+            userId:str: id of the user who wrote the command
+        """
+        commands = {"help": "displays this list of commands",
+                    "echo": "test command"}
+
+        # compose help text
+        help_text = "List of available commands:\n"
+        help_text += "```\n"
+        for key in commands.keys():
+            help_text += "{} - {}\n".format(key, commands[key])
+        help_text += "```"
+
+        # cut the leading dot and split
+        cmd_split = (cmd.strip()[1:]).split()
+        if len(cmd_split) == 0:
+            return
+
+        if not cmd_split[0] in commands.keys():
+            self.sendMessage(
+                "unknown command: *{}*".format(cmd_split[0]), userId)
+            self.sendMessage(help_text, userId)
+        elif cmd_split[0] == "help":
+            self.sendMessage(help_text, userId)
+        elif cmd_split[0] == "echo":
+            del cmd_split[0]
+            self.sendMessage(str(cmd_split), userId)
 
 
 def main(token_file):
