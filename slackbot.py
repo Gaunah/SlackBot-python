@@ -62,15 +62,18 @@ class SlackBot:
         """
         Starts the real time messaging loop
         """
-        if self.client.rtm_connect(with_team_state=False):
-            logger.info("Connected to rtm api...")
-            online = True
-            while online:
-                event = self.client.rtm_read()
-                self._parse_rtm_event(event)
-                sleep(1)
-        else:
-            logger.error("Connection Failed")
+        try:
+            if self.client.rtm_connect(with_team_state=False):
+                logger.info("Connected to rtm api...")
+                online = True
+                while online:
+                    event = self.client.rtm_read()
+                    self._parse_rtm_event(event)
+                    sleep(1)
+            else:
+                logger.error("Connection Failed")
+        except TimeoutError:
+            logger.error("Connection timeout!")
 
     def _parse_rtm_event(self, event):
         """
@@ -156,7 +159,6 @@ class SlackBot:
                                     stderr=subprocess.PIPE)
             out, err = proc.communicate(timeout=5)
             self.sendMessage(out, userId)
-
 
 
 def main(token_file):
