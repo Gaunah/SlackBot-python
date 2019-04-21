@@ -1,6 +1,7 @@
 import json
 import logging
 import subprocess
+from datetime import datetime
 from os import path
 from time import sleep
 
@@ -43,6 +44,42 @@ class SlackBot:
             text=msg,
             as_user=True
         )
+
+    def fetchHistory(self, channel):
+        """
+        This method returns a list of all messages from the specified conversation, latest to oldest.
+
+        Args:
+            channel:str: channel id
+
+        Returns:
+            msgs:list<str>: list of messages in the form of "date user: text"
+        """
+        hasMore = True
+        msgs = []
+        sleep(0.5)  # dont spam the server if to much history is fechted
+        while hasMore:
+            logger.debug("fetch conversation history from " + channel)
+            rsp = self.client.api_call(
+                "conversations.history",
+                channel=channel
+            )
+            if rsp["ok"]:
+                logging.debug("has more: " + str(rsp["has_more"]))
+                hasMore = rsp["has_more"]
+                for msg in rsp["messages"]:
+                    user = self.userIdDict[msg["user"]]  # user real_name
+                    text = msg["text"]
+                    ts = int(msg["ts"].split('.')[0])  # unix timestamp
+                    date = datetime.utcfromtimestamp(
+                        ts).strftime('%Y-%m-%d %H:%M:%S')
+                    msgs.append("{} {}: {}".format(date, user, text))
+                logger.debug("added {} messages to history from {}".format(
+                    len(msgs), channel))
+            else:
+                hasMore = False
+                logger.error(json.dumps(rsp, indent=2))
+        return msgs
 
     def initUserIdDict(self):
         """
