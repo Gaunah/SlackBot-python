@@ -27,7 +27,7 @@ class SlackBot:
                 logger.critical("malformed api token: " + api_token)
                 exit(1)
 
-        logger.debug("token: " + api_token)
+        logger.debug("init client with token: " + api_token)
         self.client = SlackClient(api_token)
         self.userIdDict = {}
 
@@ -47,10 +47,15 @@ class SlackBot:
         """
         inits the self.userIdDict containing {"id: real_name"} for the workspace
         """
+        logging.debug("try to fetch user list...")
         rsp = self.client.api_call("users.list")
+        logging.debug(json.dumps(rsp, indent=2))
         if rsp["ok"]:
             for m in rsp["members"]:
                 self.userIdDict[m["id"]] = m["real_name"]
+            logging.debug("got {} users.".format(len(self.userIdDict)))
+        else:
+            logging.error("failed to fetch user list!")
 
     def enter_rtm_loop(self):
         """
@@ -68,13 +73,16 @@ class SlackBot:
 
     def _parse_rtm_event(self, event):
         """
+        Try to parse an JSON respons and handle it.
+        List of possible events and respons format under https://api.slack.com/rtm
+
         Args:
             event:json: JSON respons from the rtm websocket
         """
         if len(event) == 0:
             return  # got nothing, pass on
 
-        rsp = event[0]
+        rsp = event[0]  # rtm event comes as an list with one or none element
         try:
             if rsp["type"] == "message":  # got a message
                 if "subtype" in rsp:  # has a subtype
@@ -87,13 +95,14 @@ class SlackBot:
                         logger.info(
                             "\"{}\" got changed to \"{}\"".format(old, new))
                     else:
+                        # unexpected rsp
                         logger.warning(json.dumps(event, indent=2))
                 else:  # regular message
                     msg = rsp["text"]
                     userId = rsp["user"]
                     logger.info("msg: \"{}\" from \"{}\"".format(
                         msg, self.userIdDict[userId]))
-                    if msg.startswith("."):
+                    if msg.startswith("."):  # msg is a command
                         self._parse_command(msg, userId)
 
             elif rsp["type"] == "hello":  # server hello
@@ -104,7 +113,7 @@ class SlackBot:
             elif rsp["type"] == "desktop_notification":  # notification
                 logger.info("desktop_notification")
             else:
-                logger.warning(json.dumps(event, indent=2))
+                logger.warning(json.dumps(event, indent=2))  # unexpected rsp
         except KeyError as ke:
             logger.error("KeyError: " + str(ke))
             logger.error(json.dumps(event, indent=2))
