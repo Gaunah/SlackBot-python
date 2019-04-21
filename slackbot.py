@@ -1,5 +1,6 @@
 import json
 import logging
+import subprocess
 from os import path
 from time import sleep
 
@@ -125,6 +126,7 @@ class SlackBot:
             userId:str: id of the user who wrote the command
         """
         commands = {"help": "displays this list of commands",
+                    "fortune": "print a random, hopefully interesting, adage",
                     "echo": "test command"}
 
         # compose help text
@@ -148,6 +150,13 @@ class SlackBot:
         elif cmd_split[0] == "echo":
             del cmd_split[0]
             self.sendMessage(str(cmd_split), userId)
+        elif cmd_split[0] == "fortune":
+            proc = subprocess.Popen("fortune",
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
+            out, err = proc.communicate(timeout=5)
+            self.sendMessage(out, userId)
+
 
 
 def main(token_file):
