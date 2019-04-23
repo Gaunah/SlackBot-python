@@ -223,11 +223,25 @@ class SlackBot:
             del cmd_split[0]
             self.sendMessage(str(cmd_split), userId)
         elif cmd_split[0] == "fortune":
-            proc = subprocess.Popen("fortune",
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE)
-            out, err = proc.communicate(timeout=5)
+            out, _ = self._system_call(["fortune"])
             self.sendMessage(out, userId)
+
+    def _system_call(self, cmd, timeout=5):
+        """
+        Calls a given command on the system. DANGEROUS!
+        Don't let user input stuff to run arbitrarily commands.
+
+        Args:
+            cmd:list<str>: First element of the list is the command, following are arguments.
+            timeout:int: Seconds before the execution is aborted.
+
+        Return:
+            (out, err): touple of stdout and stderr from the command
+        """
+        proc = subprocess.Popen(cmd,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE)
+        return proc.communicate(timeout=timeout)
 
 
 def main(token_file):
