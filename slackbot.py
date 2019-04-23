@@ -56,13 +56,15 @@ class SlackBot:
             msgs:list<str>: list of messages in the form of "date user: text"
         """
         hasMore = True
+        cur_cursor = ""
         msgs = []
         sleep(0.5)  # dont spam the server if to much history is fechted
         while hasMore:
             logger.debug("fetch conversation history from " + channel)
             rsp = self.client.api_call(
                 "conversations.history",
-                channel=channel
+                channel=channel,
+                cursor=cur_cursor
             )
             if rsp["ok"]:
                 logging.debug("has more: " + str(rsp["has_more"]))
@@ -76,6 +78,10 @@ class SlackBot:
                     msgs.append("{} {}: {}".format(date, user, text))
                 logger.debug("added {} messages to history from {}".format(
                     len(msgs), channel))
+
+                if hasMore:
+                    # get next cursor
+                    cur_cursor = rsp["response_metadata"]["next_cursor"]
             else:
                 hasMore = False
                 logger.error(json.dumps(rsp, indent=2))
