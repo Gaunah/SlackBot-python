@@ -45,7 +45,30 @@ class SlackBot:
             as_user=True
         )
 
-    def fetchHistory(self, channel):
+    def fetchChannelList(self, types=["public_channel", "private_channel", "mpim", "im"]):
+        """
+        Method returns a list of all channel-like conversations in a workspace.
+
+        Args:
+            types:list<str>: Mix and match channel types by providing a comma-separated list of any combination of
+            public_channel, private_channel, mpim, im
+        """
+        channels = []
+        logger.debug("fetch channel list for types " + str(types))
+        rsp = self.client.api_call(
+            "conversations.list",
+            types=", ".join(types)
+        )
+        if rsp["ok"]:
+            for cha in rsp["channels"]:
+                cha_id = cha["id"]
+                channels.append(cha_id)
+        else:
+            logger.error(json.dumps(rsp, indent=2))
+
+        return channels
+
+    def fetchChannelHistory(self, channel):
         """
         This method returns a list of all messages from the specified conversation, latest to oldest.
 
