@@ -124,7 +124,7 @@ class SlackBot:
         else:
             logging.error("failed to fetch user list!")
 
-    def enter_rtm_loop(self):
+    def enter_rtm_loop(self, retry=1):
         """
         Starts the real time messaging loop
         """
@@ -140,6 +140,9 @@ class SlackBot:
                 logger.error("Connection Failed")
         except TimeoutError:
             logger.error("Connection timeout!")
+            if retry > 0:
+                logger.info("try to reconnect: " + str(retry))
+                self.enter_rtm_loop(retry=(retry - 1))
 
     def _parse_rtm_event(self, event):
         """
