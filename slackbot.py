@@ -183,6 +183,12 @@ class SlackBot:
             elif rsp["type"] == "user_typing":  # user typing
                 logger.info("{} is typing".format(
                     self.userIdDict[rsp["user"]]))
+            elif rsp["type"] == "user_change":  # user changed
+                name = rsp["user"]["real_name"]
+                status = rsp["user"]["profile"]["status_text"]
+                # in the assumption that this user entered or left a call
+                logger.info("{} changed. Status: {}".format(name, status))
+                logger.debug(json.dumps(event, indent=2))
             elif rsp["type"] == "desktop_notification":  # notification
                 logger.info("desktop_notification")
             else:
