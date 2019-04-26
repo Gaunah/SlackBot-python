@@ -7,6 +7,7 @@ from time import sleep
 
 from slackclient import SlackClient
 
+__version__ = "0.1.0"
 
 class SlackBot:
     def __init__(self, token_file):
@@ -271,6 +272,7 @@ if __name__ == "__main__":
     parser.add_argument("--log_file",
                         help="file were the log gets written to e.g. \"slackbot.log\"",
                         default=None)
+    parser.add_argument('--version', action='version', version=__version__)
     args = parser.parse_args()
 
     numeric_level = getattr(logging, args.log_level.upper(), None)
